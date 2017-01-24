@@ -59,8 +59,8 @@ void Task::updateHook()
 		
 		myDEM.pointCloud2Mesh();
 		
-		_image_path.write(myDEM.getMeshPath());
-		_mesh_path.write(myDEM.getImagePath());
+		_mesh_path.write(myDEM.getMeshPath());
+		_image_path.write(myDEM.getImagePath());
 	}
     
 }
