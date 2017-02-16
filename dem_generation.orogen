@@ -59,6 +59,7 @@ task_context "Task" do
     # if this output is connected to an input or not.
     output_port "image_left_path", "/std/string"
     output_port "image_right_path", "/std/string"
+    output_port "distance_frame_path", "/std/string"
     output_port "mesh_path", "/std/string"
 
 
