@@ -59,10 +59,10 @@ void Task::updateHook()
 		_left_frame_rect.read(leftFrame);
 		cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
 		cv::Mat dst2 = dst;
-		if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREP") )
+		if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
 		{
 			_right_frame_rect.read(rightFrame);
-			dst2 = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+			dst2 = frame_helper::FrameHelper::convertToCvMat(*rightFrame);
 		}
 		myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
 		myDEM.distance2pointCloud(distance_image.data);
