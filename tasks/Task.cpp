@@ -52,6 +52,7 @@ void Task::updateHook()
 
 	if(_distance_frame.read(distance_image) == RTT::NewData)
 	{
+		myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 		myDEM.saveDistanceFrame(distance_image.data);
 		_distance_frame_path.write(myDEM.getDistanceFramePath());
 		
@@ -67,6 +68,8 @@ void Task::updateHook()
 		myDEM.distance2pointCloud(distance_image.data);
 
 		myDEM.pointCloud2Mesh();
+		
+		myDEM.savePointCloud();
 
 		_mesh_path.write(myDEM.getMeshPath());
 		_image_left_path.write(myDEM.getImageLeftPath());
