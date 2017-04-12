@@ -2,22 +2,15 @@ name "dem_generation"
 # Optionally declare the version number
 # version "0.1"
 
-# If new data types need to be defined, they have to be put in a separate C++
-# header, and this header will be loaded here
 import_types_from "dem_generationTypes.hpp"
-# Finally, it is pretty common that headers are directly loaded from an external
-# library. In this case, the library must be first used (the name is the
-# library's pkg-config name) and then the header can be used. Following Rock
-# conventions, a common use-case would be:
-#
-# import_types_from "dem_generation/CustomType.hpp"
+
+
 using_library "dem_generation"
 using_library "pcl_common-1.7"
 using_library "frame_helper"
 #using_library "opencv"
 
-# If this project uses data types that are defined in other oroGen projects,
-# these projects should be imported there as well.
+
 import_types_from "base"
 import_types_from "frame_helper/Calibration.h"
 
@@ -30,15 +23,13 @@ task_context "Task" do
     # transition to a setup where all components use a configuration step.
     needs_configuration
 
-    # A configuration property (here, a std::string). Its value can be retrieved
+    # Configuration property
     # in the C++ code with # _config_value.get() and _config_value.set(new_value).
     property "camera_name", "/std/string"
     property "save_directory", "/std/string"
     property "cameraCalibration", "/frame_helper/CameraCalibration"
 
-    # An input port, i.e. an object from which the component gets data from
-    # other components' outputs
-    #
+	# Input ports
     # Data can be retrieved using _input.read(value), which returns true if data
     # was available, and false otherwise. _input.connected() returns if this
     # input is connected to an output or not.
@@ -49,15 +40,12 @@ task_context "Task" do
 	input_port('pointcloud', 'base::samples::Pointcloud').
 	doc ('The pointcloud of the scan')
 
-	# Synchronous output 
 	input_port('left_frame_rect', ro_ptr('base::samples::frame::Frame')).
 	doc 'Rectified Left camera frame of PanCam.'
 	input_port('right_frame_rect', ro_ptr('base::samples::frame::Frame')).
 	doc 'Rectified Right camera frame of PanCam.'
 
-    # An output port, i.e. an object to which the component pushes data so that
-    # it is transmitted to other components' inputs
-    #
+    # Output ports
     # Data can be written using _output.write(value). _output.connected() returns
     # if this output is connected to an input or not.
     output_port "image_left_path", "/std/string"
@@ -65,11 +53,7 @@ task_context "Task" do
     output_port "distance_frame_path", "/std/string"
     output_port "mesh_path", "/std/string"
 
-
-    # If you want that component's updateHook() to be executed when the "input"
-    # port gets data, uncomment this and comment the 'periodic' line
-    # port_driven "input"
-    # By default, the task will be periodic with a period of 0.1
-    port_driven 'distance_frame'
+	# Driving
+    port_driven 'distance_frame', 'pointcloud'
 end
 

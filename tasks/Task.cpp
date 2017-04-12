@@ -50,36 +50,62 @@ void Task::updateHook()
     
 	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> leftFrame, rightFrame;
 
-	if(_distance_frame.read(distance_image) == RTT::NewData)
+		// receive normal frame
+	if(_distance_frame.connected())
 	{
-		myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
-		myDEM.saveDistanceFrame(distance_image.data);
-		_distance_frame_path.write(myDEM.getDistanceFramePath());
-		
-		_left_frame_rect.read(leftFrame);
-		cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
-		cv::Mat dst2 = dst;
-		if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
+		if(_distance_frame.read(distance_image) == RTT::NewData)
 		{
-			_right_frame_rect.read(rightFrame);
-			dst2 = frame_helper::FrameHelper::convertToCvMat(*rightFrame);
-		}
-		myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
-		myDEM.distance2pointCloud(distance_image.data);
+			myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+			myDEM.saveDistanceFrame(distance_image.data);
+			_distance_frame_path.write(myDEM.getDistanceFramePath());
+			
+			_left_frame_rect.read(leftFrame);
+			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+			cv::Mat dst2 = dst;
+			if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
+			{
+				_right_frame_rect.read(rightFrame);
+				dst2 = frame_helper::FrameHelper::convertToCvMat(*rightFrame);
+			}
+			myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
+			myDEM.distance2pointCloud(distance_image.data);
 
-		myDEM.pointCloud2Mesh();
-		
-		myDEM.savePointCloud();
+			myDEM.pointCloud2Mesh();
+			
+			myDEM.savePointCloud();
 
-		_mesh_path.write(myDEM.getMeshPath());
-		_image_left_path.write(myDEM.getImageLeftPath());
-		
-		if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
-		{
-			_image_right_path.write(myDEM.getImageRightPath());
+			_mesh_path.write(myDEM.getMeshPath());
+			_image_left_path.write(myDEM.getImageLeftPath());
+			
+			if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
+			{
+				_image_right_path.write(myDEM.getImageRightPath());
+			}
 		}
 	}
-    
+	
+	// receive point cloud
+	if(_pointcloud.connected())
+	{
+		if(_pointcloud.read(rock_pointcloud) == RTT::NewData)
+		{
+			// convert point cloud to pcl format
+			this->toPCLPointCloud(rock_pointcloud, input_pointcloud);
+			
+			// convert intensity frame to opencv format
+			_left_frame_rect.read(leftFrame);
+			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+			cv::Mat dst2 = dst;
+			
+			myDEM.setTimestamp(rock_pointcloud.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+			myDEM.setColorFrame(dst, dst2);
+
+			myDEM.setPointCloud(input_pointcloud);
+			myDEM.pointCloud2Mesh();
+			myDEM.savePointCloud();
+		}
+	}
+			
 }
 void Task::errorHook()
 {
@@ -94,6 +120,7 @@ void Task::cleanupHook()
     TaskBase::cleanupHook();
 }
 
+// copied from GIcp.cpp / hpp
 void Task::toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointCloud< pcl::PointXYZ >& pcl_pc, double density)
 {
     pcl_pc.clear();

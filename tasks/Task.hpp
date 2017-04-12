@@ -42,6 +42,9 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
 		DEM myDEM;
 		base::samples::DistanceImage distance_image;
 		std::string camera_name, save_directory;
+		base::samples::Pointcloud rock_pointcloud;
+		pcl::PointCloud<pcl::PointXYZ> input_pointcloud;
+
 
 
 
