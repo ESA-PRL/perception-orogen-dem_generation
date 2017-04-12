@@ -53,15 +53,15 @@ void Task::updateHook()
 	if(_distance_frame.read(distance_image) == RTT::NewData)
 	{
 		myDEM.saveDistanceFrame(distance_image.data);
-		_distance_frame_path.write(myDEM.getDistanceFramePath());
+
 		
 		_left_frame_rect.read(leftFrame);
 		cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
 		cv::Mat dst2 = dst;
-		if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREP") )
+		if ( (camera_name=="FLOC") || (camera_name=="RLOC") )
 		{
 			_right_frame_rect.read(rightFrame);
-			dst2 = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+			dst2 = frame_helper::FrameHelper::convertToCvMat(*rightFrame);
 		}
 		myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
 		myDEM.distance2pointCloud(distance_image.data);
@@ -71,10 +71,11 @@ void Task::updateHook()
 		_mesh_path.write(myDEM.getMeshPath());
 		_image_left_path.write(myDEM.getImageLeftPath());
 		
-		if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
+		if ( (camera_name=="FLOC") || (camera_name=="RLOC") )
 		{
 			_image_right_path.write(myDEM.getImageRightPath());
 		}
+		_distance_frame_path.write(myDEM.getDistanceFramePath());
 	}
     
 }
