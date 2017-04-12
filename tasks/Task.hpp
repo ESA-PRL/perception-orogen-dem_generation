@@ -121,6 +121,10 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
          * before calling start() again.
          */
         void cleanupHook();
+        
+        // copied from GIcp.cpp / hpp
+		void toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointCloud< pcl::PointXYZ >& pcl_pc, double density = 1.0);
+
     };
 }
 

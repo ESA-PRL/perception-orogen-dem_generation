@@ -43,8 +43,11 @@ task_context "Task" do
     # was available, and false otherwise. _input.connected() returns if this
     # input is connected to an output or not.
         
+    # The component works from distance frame. If a pointcloud is given, it can work directly from there 
 	input_port("distance_frame", "/base/samples/DistanceImage").
 	doc "distance image for the left camera"
+	input_port('pointcloud', 'base::samples::Pointcloud').
+	doc ('The pointcloud of the scan')
 
 	# Synchronous output 
 	input_port('left_frame_rect', ro_ptr('base::samples::frame::Frame')).

@@ -93,3 +93,49 @@ void Task::cleanupHook()
 {
     TaskBase::cleanupHook();
 }
+
+void Task::toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointCloud< pcl::PointXYZ >& pcl_pc, double density)
+{
+    pcl_pc.clear();
+    std::vector<bool> mask;
+    unsigned sample_count = (unsigned)(density * pc.points.size());
+
+    if(density <= 0.0 || pc.points.size() == 0)
+    {
+        return;
+    }
+    else if(sample_count >= pc.points.size())
+    {
+        mask.resize(pc.points.size(), true);
+    }
+    else
+    {
+        mask.resize(pc.points.size(), false);
+        unsigned samples_drawn = 0;
+
+        while(samples_drawn < sample_count)
+        {
+            unsigned index = rand() % pc.points.size();
+            if(mask[index] == false)
+            {
+                mask[index] = true;
+                samples_drawn++;
+            }
+        }
+    }
+
+    for(size_t i = 0; i < pc.points.size(); ++i)
+    {
+        if(mask[i])
+        {
+            if (base::isnotnan<base::Point>(pc.points[i]))
+            {
+                /** Depth info **/
+                pcl_pc.push_back(pcl::PointXYZ(pc.points[i].x(), pc.points[i].y(), pc.points[i].z()));
+            }
+        }
+    }
+
+    /** All data points are finite (no NaN or Infinite) **/
+    pcl_pc.is_dense = true;
+}
