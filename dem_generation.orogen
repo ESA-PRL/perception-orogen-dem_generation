@@ -8,11 +8,12 @@ import_types_from "dem_generationTypes.hpp"
 using_library "dem_generation"
 using_library "pcl_common-1.7"
 using_library "frame_helper"
-#using_library "opencv"
-
+#using_library "opencv
+using_library "velodyne_lidar"
 
 import_types_from "base"
 import_types_from "frame_helper/Calibration.h"
+import_types_from "velodyne_lidar/MultilevelLaserScan.h"
 
 # Declare a new task context (i.e., a component)
 #
@@ -44,17 +45,29 @@ task_context "Task" do
     # Data can be retrieved using _input.read(value), which returns true if data
     # was available, and false otherwise. _input.connected() returns if this
     # input is connected to an output or not.
-        
-    # The component works from distance frame. If a pointcloud is given, it can work directly from there 
-	input_port("distance_frame", "/base/samples/DistanceImage").
-	doc "distance image for the left camera"
-	input_port('pointcloud', 'base::samples::Pointcloud').
-	doc ('The pointcloud of the scan')
+	
+    # Frame input port
+    input_port('left_frame_rect', ro_ptr('base::samples::frame::Frame')).
+        doc 'Rectified Left camera frame of PanCam.'
 
-	input_port('left_frame_rect', ro_ptr('base::samples::frame::Frame')).
-	doc 'Rectified Left camera frame of PanCam.'
-	input_port('right_frame_rect', ro_ptr('base::samples::frame::Frame')).
-	doc 'Rectified Right camera frame of PanCam.'
+    # Tof dedicated input ports
+    input_port('pointcloud', 'base::samples::Pointcloud').
+        doc ('The pointcloud of the scan')
+
+    # Stereo dedicated input ports
+    input_port("distance_frame", "/base/samples/DistanceImage").
+        doc "distance image for the left camera"
+    input_port('right_frame_rect', ro_ptr('base::samples::frame::Frame')).
+        doc 'Rectified Right camera frame of PanCam.'
+
+    # LiDAR dedicated input ports
+    input_port("laser_scans", "velodyne_lidar::MultilevelLaserScan").
+        doc 'laserscans of the upper head'
+    input_port("ir_interp_frame", ro_ptr("/base/samples/frame/Frame")).
+	   doc("video interpolated ir image retrieved from LiDAR")
+    input_port("range_interp_frame", ro_ptr("/base/samples/frame/Frame")).
+	   doc("video interpolated range image retrieved from LiDAR")
+
 
     # Output ports
     # Data can be written using _output.write(value). _output.connected() returns
@@ -65,6 +78,6 @@ task_context "Task" do
     output_port "mesh_path", "/std/string"
 
 	# Driving
-    port_driven 'distance_frame', 'pointcloud'
+    port_driven 'distance_frame', 'pointcloud', 'laser_scans'
 end
 

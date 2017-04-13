@@ -14,6 +14,9 @@
 
 #include <dem_generation/dem_generation.hpp>
 
+#include <velodyne_lidar/pointcloudConvertHelper.hpp>
+#include <velodyne_lidar/MultilevelLaserScan.h>
+
 
 namespace dem_generation {
 
@@ -44,8 +47,8 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
 		std::string camera_name, save_directory;
 		base::samples::Pointcloud rock_pointcloud;
 		pcl::PointCloud<pcl::PointXYZ> input_pointcloud;
-
-
+		velodyne_lidar::MultilevelLaserScan input_laser_scan;
+		std::vector<Eigen::Vector3d> points;
 
 
 

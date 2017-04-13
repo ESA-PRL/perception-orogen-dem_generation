@@ -54,37 +54,29 @@ void Task::updateHook()
     
 	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> leftFrame, rightFrame;
 
-		// receive normal frame
+	// receive normal frame
 	if(_distance_frame.connected())
 	{
 		if(_distance_frame.read(distance_image) == RTT::NewData)
 		{
-			myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
-			myDEM.saveDistanceFrame(distance_image.data);
-			_distance_frame_path.write(myDEM.getDistanceFramePath());
-			
+			// convert frame to opencv format
 			_left_frame_rect.read(leftFrame);
 			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
 			cv::Mat dst2 = dst;
-			if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
-			{
-				_right_frame_rect.read(rightFrame);
-				dst2 = frame_helper::FrameHelper::convertToCvMat(*rightFrame);
-			}
+			
+			// generate products
+			myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+			myDEM.saveDistanceFrame(distance_image.data);	
 			myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
 			myDEM.distance2pointCloud(distance_image.data);
-
 			myDEM.pointCloud2Mesh();
-			
-			myDEM.savePointCloud();
+			myDEM.savePointCloud(true);
 
+			// write product outputs paths
+			_distance_frame_path.write(myDEM.getDistanceFramePath());
 			_mesh_path.write(myDEM.getMeshPath());
 			_image_left_path.write(myDEM.getImageLeftPath());
-			
-			if ( (camera_name=="FLOC_STEREO") || (camera_name=="RLOC_STEREO") )
-			{
-				_image_right_path.write(myDEM.getImageRightPath());
-			}
+
 		}
 	}
 	
@@ -101,16 +93,57 @@ void Task::updateHook()
 			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
 			cv::Mat dst2 = dst;
 			
+			// generate products
 			myDEM.setTimestamp(rock_pointcloud.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 			myDEM.setColorFrame(dst, dst2);
-
 			myDEM.setPointCloud(input_pointcloud);
 			myDEM.pointCloud2Mesh();
-			myDEM.savePointCloud();
+			myDEM.savePointCloud(true);
+			
+			// write product outputs paths
+			_distance_frame_path.write(myDEM.getDistanceFramePath());
+			_mesh_path.write(myDEM.getMeshPath());
+			_image_left_path.write(myDEM.getImageLeftPath());
 		}
 	}
+	
+	// receive laser scans
+	if(_laser_scans.connected())
+	{
+		if(_laser_scans.read(input_laser_scan) == RTT::NewData)
+		{
+			// convert laser scan to 3d points vector
+			velodyne_lidar::ConvertHelper::convertScanToPointCloud(input_laser_scan, points);
+
+			// fill pcl pointcloud using lidar 3d points
+			input_pointcloud.points.resize(points.size());			
+			for(unsigned int i = 0; i<input_pointcloud.size(); i++)
+			{
+				input_pointcloud.points[i].x = (float)points[i][0]/10.0;
+				input_pointcloud.points[i].y = (float)points[i][1]/10.0;
+				input_pointcloud.points[i].z = (float)points[i][2]/10.0;
+			}
 			
+			// convert intensity frame to opencv format
+			_left_frame_rect.read(leftFrame);
+			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+			cv::Mat dst2 = dst;
+			
+			// generate products
+			myDEM.setTimestamp(input_laser_scan.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+			myDEM.setColorFrame(dst, dst2);
+			myDEM.setPointCloud(input_pointcloud);
+			myDEM.pointCloud2Mesh();
+			myDEM.savePointCloud(false); // do not save filtered pointcloud
+
+			// write product outputs paths
+			_distance_frame_path.write(myDEM.getDistanceFramePath());
+			_mesh_path.write(myDEM.getMeshPath());
+			_image_left_path.write(myDEM.getImageLeftPath());
+		}
+	}
 }
+
 void Task::errorHook()
 {
     TaskBase::errorHook();
