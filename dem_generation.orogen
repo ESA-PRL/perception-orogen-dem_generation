@@ -25,11 +25,22 @@ task_context "Task" do
 
     # Configuration property
     # in the C++ code with # _config_value.get() and _config_value.set(new_value).
+    
+    # path properties
     property "camera_name", "/std/string"
     property "save_directory", "/std/string"
+    
+    #filters properties
+    property("leaf_size","float",0.015).doc("Leaf size of pc voxel filter")
+    property("k_points","int",20).doc("K points for statistical pc filter")
+    property("pointcloud_cut_min","/base/Vector4d").doc("Minimum vertex where a local point cloud is supposed to be valid within the rover frame")
+    property("pointcloud_cut_max","/base/Vector4d").doc("Maximum vertex where a local point cloud is supposed to be valid within the rover frame")
+    
+    # other properties
     property "cameraCalibration", "/frame_helper/CameraCalibration"
 
-	# Input ports
+
+    # Input ports
     # Data can be retrieved using _input.read(value), which returns true if data
     # was available, and false otherwise. _input.connected() returns if this
     # input is connected to an output or not.

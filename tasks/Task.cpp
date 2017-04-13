@@ -35,6 +35,10 @@ bool Task::configureHook()
 	save_directory = _save_directory.get();   
 	
 	myDEM.setFileDestination(_save_directory.get(), _camera_name.get());
+	
+	Eigen::Vector4d a = _pointcloud_cut_min.get();
+	Eigen::Vector4d b = _pointcloud_cut_max.get();
+	myDEM.setPcFiltersParameters(a.cast<float>(), b.cast<float>(), _leaf_size.get(), _k_points.get());
      
     return true;
 }
