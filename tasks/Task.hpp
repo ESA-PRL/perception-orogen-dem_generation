@@ -19,6 +19,8 @@
 
 #include <telemetry_telecommand/Messages.hpp>
 
+#include <unistd.h>
+
 
 namespace dem_generation {
 

@@ -81,6 +81,6 @@ task_context "Task" do
     output_port "telemetry_out", 'telemetry_telecommand/messages/Telemetry'
 
 	# Driving
-    port_driven 'distance_frame', 'pointcloud', 'laser_scans', 'telecommands_in' # eventually only telecommands in should be left
+    port_driven 'telecommands_in' 
 end
 

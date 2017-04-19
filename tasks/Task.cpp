@@ -116,8 +116,17 @@ void Task::updateHook()
 		// received only distance frame (stereocamera is connected)
 		else if(_distance_frame.connected())
 		{
-			if(_distance_frame.read(distance_image) == RTT::NewData)
+			// only frame is needed
+			if(!save_dem && !save_pc && !save_distance)
 			{
+				this->generateTelemetryFromFrame();
+			}
+			// if not, we need to wait for the distance frame coming from stereo (TO BE CHECKED IF IT WORKS PROPERLY)
+			else
+			{
+				while(_distance_frame.read(distance_image) != RTT::NewData)
+					usleep(1000);
+				
 				this->generateTelemetryFromFrame();
 			}
 		}
