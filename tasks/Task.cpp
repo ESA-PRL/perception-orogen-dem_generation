@@ -30,8 +30,28 @@ bool Task::configureHook()
         return false;
         
     frame_helper::CameraCalibration calib = _cameraCalibration.get();    
-	myDEM.setCameraParameters(calib.width,calib.height,calib.cx,calib.cy, calib.fx, calib.fy); // TODO PUT PARAMETERS
+	myDEM.setCameraParameters(calib.width,calib.height,calib.cx,calib.cy, calib.fx, calib.fy);
+	
+	// set camera name and producer source
 	camera_name = _camera_name.get();
+	if(camera_name == "MAST")
+		telemetry.productSource = telemetry_telecommand::messages::MAST;   
+	else if(camera_name == "LIDAR")
+		telemetry.productSource = telemetry_telecommand::messages::LIDAR;
+	else if(camera_name == "TOF")
+		telemetry.productSource = telemetry_telecommand::messages::TOF;
+	else if(camera_name == "HAZCAM")
+		telemetry.productSource = telemetry_telecommand::messages::HAZCAM;
+	else if(camera_name == "REAR")
+		telemetry.productSource = telemetry_telecommand::messages::REAR;
+	else if(camera_name == "FRONT")
+		telemetry.productSource = telemetry_telecommand::messages::FRONT;
+	else
+	{
+		std::cout << " ERROR!! Unexisting or unsupported producer type/camera_name" << std::endl;
+		return false; // wrong config
+	}
+	
 	save_directory = _save_directory.get();   
 	
 	myDEM.setFileDestination(_save_directory.get(), _camera_name.get());
@@ -51,96 +71,58 @@ bool Task::startHook()
 void Task::updateHook()
 {
     TaskBase::updateHook();
-    
-	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> leftFrame, rightFrame;
-
-	// receive normal frame
-	if(_distance_frame.connected())
+   
+	// New telecommand, time to process
+	if(_telecommands_in.read(telecommand_vec) == RTT::NewData)
 	{
-		if(_distance_frame.read(distance_image) == RTT::NewData)
+		// set which data should be processed and saved
+		this->setProducts();	
+		
+		// receive point cloud (tof is connected)
+		if(_pointcloud.connected())
 		{
-			// convert frame to opencv format
-			_left_frame_rect.read(leftFrame);
-			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
-			cv::Mat dst2 = dst;
-			
-			// generate products
-			myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
-			myDEM.saveDistanceFrame(distance_image.data);	
-			myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
-			myDEM.distance2pointCloud(distance_image.data);
-			myDEM.pointCloud2Mesh();
-			myDEM.savePointCloud(true);
-
-			// write product outputs paths
-			_distance_frame_path.write(myDEM.getDistanceFramePath());
-			_mesh_path.write(myDEM.getMeshPath());
-			_image_left_path.write(myDEM.getImageLeftPath());
-
-		}
-	}
-	
-	// receive point cloud
-	if(_pointcloud.connected())
-	{
-		if(_pointcloud.read(rock_pointcloud) == RTT::NewData)
-		{
-			// convert point cloud to pcl format
-			this->toPCLPointCloud(rock_pointcloud, input_pointcloud);
-			
-			// convert intensity frame to opencv format
-			_left_frame_rect.read(leftFrame);
-			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
-			cv::Mat dst2 = dst;
-			
-			// generate products
-			myDEM.setTimestamp(rock_pointcloud.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
-			myDEM.setColorFrame(dst, dst2);
-			myDEM.setPointCloud(input_pointcloud);
-			myDEM.pointCloud2Mesh();
-			myDEM.savePointCloud(true);
-			
-			// write product outputs paths
-			_distance_frame_path.write(myDEM.getDistanceFramePath());
-			_mesh_path.write(myDEM.getMeshPath());
-			_image_left_path.write(myDEM.getImageLeftPath());
-		}
-	}
-	
-	// receive laser scans
-	if(_laser_scans.connected())
-	{
-		if(_laser_scans.read(input_laser_scan) == RTT::NewData)
-		{
-			// convert laser scan to 3d points vector
-			velodyne_lidar::ConvertHelper::convertScanToPointCloud(input_laser_scan, points);
-
-			// fill pcl pointcloud using lidar 3d points
-			input_pointcloud.points.resize(points.size());			
-			for(unsigned int i = 0; i<input_pointcloud.size(); i++)
+			if(_pointcloud.read(rock_pointcloud) == RTT::NewData)
 			{
-				input_pointcloud.points[i].x = (float)points[i][0]/10.0;
-				input_pointcloud.points[i].y = (float)points[i][1]/10.0;
-				input_pointcloud.points[i].z = (float)points[i][2]/10.0;
+				// convert point cloud to pcl format
+				this->toPCLPointCloud(rock_pointcloud, input_pointcloud);
+				
+				// generate telemetry
+				this->generateTelemetryFromPC();
 			}
-			
-			// convert intensity frame to opencv format
-			_left_frame_rect.read(leftFrame);
-			cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
-			cv::Mat dst2 = dst;
-			
-			// generate products
-			myDEM.setTimestamp(input_laser_scan.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
-			myDEM.setColorFrame(dst, dst2);
-			myDEM.setPointCloud(input_pointcloud);
-			myDEM.pointCloud2Mesh();
-			myDEM.savePointCloud(false); // do not save filtered pointcloud
-
-			// write product outputs paths
-			_distance_frame_path.write(myDEM.getDistanceFramePath());
-			_mesh_path.write(myDEM.getMeshPath());
-			_image_left_path.write(myDEM.getImageLeftPath());
 		}
+		
+		// receive laser scans (lidar is connected)
+		else if(_laser_scans.connected())
+		{
+			if(_laser_scans.read(input_laser_scan) == RTT::NewData)
+			{
+				// convert laser scan to 3d points vector
+				velodyne_lidar::ConvertHelper::convertScanToPointCloud(input_laser_scan, points);
+
+				// fill pcl pointcloud using lidar 3d points
+				input_pointcloud.points.resize(points.size());			
+				for(unsigned int i = 0; i<input_pointcloud.size(); i++)
+				{
+					input_pointcloud.points[i].x = (float)points[i][0]/10.0;
+					input_pointcloud.points[i].y = (float)points[i][1]/10.0;
+					input_pointcloud.points[i].z = (float)points[i][2]/10.0;
+				}
+				
+				// generate telemetry
+				this->generateTelemetryFromPC();
+			}
+		}
+		
+		// received only distance frame (stereocamera is connected)
+		else if(_distance_frame.connected())
+		{
+			if(_distance_frame.read(distance_image) == RTT::NewData)
+			{
+				this->generateTelemetryFromFrame();
+			}
+		}
+		else
+			std::cout << "WARNING!! Nothing is connected to " << camera_name << " associated DEM generation component" << std::endl;
 	}
 }
 
@@ -155,6 +137,165 @@ void Task::stopHook()
 void Task::cleanupHook()
 {
     TaskBase::cleanupHook();
+}
+
+// This function eads the stored telecommands and sets the 
+// image/distance/pointcloud/dem variables that will be used to process
+// and save the products
+void Task::setProducts()
+{
+	save_frame = false;
+	save_distance = false;
+	save_dem = false;
+	save_pc = false;
+	
+	int tSize = telecommand_vec.size();
+	for(int i = 0; i < tSize; i++)
+	{
+		if(telecommand_vec[i].productType == telemetry_telecommand::messages::IMAGE)
+			save_frame = true;
+		
+		if(telecommand_vec[i].productType == telemetry_telecommand::messages::DISTANCE)
+			save_distance = true;
+			
+		if(telecommand_vec[i].productType == telemetry_telecommand::messages::POINT_CLOUD)
+			save_pc = true;
+			
+		if(telecommand_vec[i].productType == telemetry_telecommand::messages::DEM)
+			save_dem = true;
+			
+	}
+}
+
+// fills telemetry fields and writes the mesage on the port
+void Task::writeTelemetry(std::string productPath,
+						telemetry_telecommand::messages::ProductType type,
+						base::Time timestamp)
+{
+	telemetry.productPath = productPath;
+	telemetry.type = type;
+	telemetry.timestamp = timestamp;
+	_telemetry_out.write(telemetry);
+}
+
+// generate the demanded telemetry starting from a frame
+// to generate pc, dem must be generated as well. dist_frame is 
+// the only one that does not need color frame to be saved. 
+// saving pc without dem will still require the color to be saved
+void Task::generateTelemetryFromFrame()
+{
+	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> leftFrame, rightFrame;
+
+
+	// convert frame to opencv format
+	_left_frame_rect.read(leftFrame);
+	cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+	cv::Mat dst2 = dst;
+	
+	myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+
+	// unless only distance frame is recquired, save color frame
+	if(save_frame || save_dem || save_pc)
+		myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
+
+	// if frame or dem are recquired, send frame as telemetry
+	if(save_frame || save_dem)
+	{
+		this->writeTelemetry(myDEM.getImageLeftPath(),
+			telemetry_telecommand::messages::IMAGE,
+			leftFrame->time);
+	}
+
+	// if wanted, save distance and send as telemetry
+	if(save_distance)
+	{
+		myDEM.saveDistanceFrame(distance_image.data);	
+		this->writeTelemetry(myDEM.getDistanceFramePath(),
+			telemetry_telecommand::messages::DISTANCE,
+			leftFrame->time);
+	}
+
+	// generate dem
+	if(save_dem || save_pc)
+	{
+		myDEM.distance2pointCloud(distance_image.data);
+		myDEM.pointCloud2Mesh();
+	}
+
+	// send dem as telemetry
+	if(save_dem)
+	{
+		this->writeTelemetry(myDEM.getMeshPath(),
+			telemetry_telecommand::messages::DEM,
+			leftFrame->time);
+	}
+
+	// save pc and send as telemetry
+	if(save_pc)
+	{
+		myDEM.savePointCloud(true); // save filtered pointcloud
+		this->writeTelemetry(myDEM.getPointCloudPath(),
+			telemetry_telecommand::messages::POINT_CLOUD,
+			leftFrame->time);
+	}
+}
+
+// generate the demanded telemetry starting from a point cloud
+void Task::generateTelemetryFromPC()
+{
+	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> leftFrame, rightFrame;
+
+	// convert intensity frame to opencv format
+	_left_frame_rect.read(leftFrame);
+	cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+	cv::Mat dst2 = dst;
+
+	// generate products
+	myDEM.setTimestamp(rock_pointcloud.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+	
+	// unless only distance frame is recquired, save color frame
+	if(save_frame || save_dem || save_pc)
+		myDEM.setColorFrame(dst, dst2);
+		
+	// if frame or dem are recquired, send frame as telemetry
+	if(save_frame || save_dem)
+	{
+		this->writeTelemetry(myDEM.getImageLeftPath(),
+			telemetry_telecommand::messages::IMAGE,
+			leftFrame->time);
+	}
+	
+	// if wanted, save distance and send as telemetry
+	if(save_distance)
+	{
+		_distance_frame.read(distance_image);
+		myDEM.saveDistanceFrame(distance_image.data);	
+		this->writeTelemetry(myDEM.getDistanceFramePath(),
+			telemetry_telecommand::messages::DISTANCE,
+			leftFrame->time);
+	}
+	
+	// input pointcloud
+	if(save_pc || save_dem)
+		myDEM.setPointCloud(input_pointcloud);
+
+	// generate dem and send as telemetry
+	if(save_dem)
+	{
+		myDEM.pointCloud2Mesh();
+		this->writeTelemetry(myDEM.getMeshPath(),
+			telemetry_telecommand::messages::DEM,
+			leftFrame->time);
+	}
+	
+	// save pointcloud and send as telemetry
+	if(save_pc)
+	{
+		myDEM.savePointCloud(true); // save unfiltered pointcloud
+		this->writeTelemetry(myDEM.getPointCloudPath(),
+			telemetry_telecommand::messages::POINT_CLOUD,
+			leftFrame->time);
+	}
 }
 
 // copied from GIcp.cpp / hpp

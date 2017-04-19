@@ -17,6 +17,8 @@
 #include <velodyne_lidar/pointcloudConvertHelper.hpp>
 #include <velodyne_lidar/MultilevelLaserScan.h>
 
+#include <telemetry_telecommand/Messages.hpp>
+
 
 namespace dem_generation {
 
@@ -49,6 +51,9 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
 		pcl::PointCloud<pcl::PointXYZ> input_pointcloud;
 		velodyne_lidar::MultilevelLaserScan input_laser_scan;
 		std::vector<Eigen::Vector3d> points;
+		std::vector<telemetry_telecommand::messages::Telecommand> telecommand_vec;
+		telemetry_telecommand::messages::Telemetry telemetry;
+		bool save_frame, save_distance, save_dem, save_pc; // save bools
 
 
 
@@ -128,6 +133,13 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
          */
         void cleanupHook();
         
+        void setProducts();
+        void writeTelemetry(std::string productPath,
+						telemetry_telecommand::messages::ProductType type,
+						base::Time timestamp);
+		void generateTelemetryFromFrame();
+		void generateTelemetryFromPC();
+
         // copied from GIcp.cpp / hpp
 		void toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointCloud< pcl::PointXYZ >& pcl_pc, double density = 1.0);
 

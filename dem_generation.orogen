@@ -10,6 +10,8 @@ using_library "pcl_common-1.7"
 using_library "frame_helper"
 #using_library "opencv
 using_library "velodyne_lidar"
+using_library "telemetry_telecommand"
+import_types_from "telemetry_telecommand/Messages.hpp"
 
 import_types_from "base"
 import_types_from "frame_helper/Calibration.h"
@@ -45,6 +47,10 @@ task_context "Task" do
     # Data can be retrieved using _input.read(value), which returns true if data
     # was available, and false otherwise. _input.connected() returns if this
     # input is connected to an output or not.
+    
+    # Telecommand input ports
+	input_port('telecommands_in', 'std::vector<telemetry_telecommand/messages/Telecommand>').
+		doc 'Input telecommands to be served by the component'
 	
     # Frame input port
     input_port('left_frame_rect', ro_ptr('base::samples::frame::Frame')).
@@ -72,12 +78,9 @@ task_context "Task" do
     # Output ports
     # Data can be written using _output.write(value). _output.connected() returns
     # if this output is connected to an input or not.
-    output_port "image_left_path", "/std/string"
-    output_port "image_right_path", "/std/string"
-    output_port "distance_frame_path", "/std/string"
-    output_port "mesh_path", "/std/string"
+    output_port "telemetry_out", 'telemetry_telecommand/messages/Telemetry'
 
 	# Driving
-    port_driven 'distance_frame', 'pointcloud', 'laser_scans'
+    port_driven 'distance_frame', 'pointcloud', 'laser_scans', 'telecommands_in' # eventually only telecommands in should be left
 end
 
