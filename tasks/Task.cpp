@@ -59,6 +59,8 @@ bool Task::configureHook()
 	Eigen::Vector4d a = _pointcloud_cut_min.get();
 	Eigen::Vector4d b = _pointcloud_cut_max.get();
 	myDEM.setPcFiltersParameters(a.cast<float>(), b.cast<float>(), _leaf_size.get(), _k_points.get());
+	
+	sync_count = 0;
      
     return true;
 }
@@ -132,6 +134,11 @@ void Task::updateHook()
 		}
 		else
 			std::cout << "WARNING!! Nothing is connected to " << camera_name << " associated DEM generation component" << std::endl;
+	
+		// new process finished, write out sync port
+		_sync_out.write(sync_count);
+		sync_count++;
+	
 	}
 }
 

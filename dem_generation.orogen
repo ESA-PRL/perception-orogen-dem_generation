@@ -79,6 +79,11 @@ task_context "Task" do
     # Data can be written using _output.write(value). _output.connected() returns
     # if this output is connected to an input or not.
     output_port "telemetry_out", 'telemetry_telecommand/messages/Telemetry'
+	
+    # an incremental number is written to this port after each iteration
+    # of the update hook
+	output_port "sync_out", "int"
+
 
 	# Driving
     port_driven 'telecommands_in' 
