@@ -201,7 +201,7 @@ void Task::generateTelemetryFromFrame()
 	cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
 	cv::Mat dst2 = dst;
 	
-	myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 
 	// unless only distance frame is recquired, save color frame
 	if(save_frame || save_dem || save_pc)
@@ -260,7 +260,7 @@ void Task::generateTelemetryFromPC()
 	cv::Mat dst2 = dst;
 
 	// generate products
-	myDEM.setTimestamp(rock_pointcloud.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 	
 	// unless only distance frame is recquired, save color frame
 	if(save_frame || save_dem || save_pc)
