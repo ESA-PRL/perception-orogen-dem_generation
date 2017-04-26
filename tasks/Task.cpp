@@ -208,14 +208,14 @@ void Task::generateTelemetryFromFrame()
 	cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
 	cv::Mat dst2 = dst;
 	
-	myDEM.setTimestamp(distance_image.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 
 	// unless only distance frame is recquired, save color frame
-	if(save_frame || save_dem || save_pc)
+	//if(save_frame || save_dem || save_pc || save_distance)
 		myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
 
 	// if frame or dem are recquired, send frame as telemetry
-	if(save_frame || save_dem)
+	if(save_frame || save_dem || save_distance)
 	{
 		this->writeTelemetry(myDEM.getImageLeftPath(),
 			telemetry_telecommand::messages::IMAGE,
@@ -267,7 +267,7 @@ void Task::generateTelemetryFromPC()
 	cv::Mat dst2 = dst;
 
 	// generate products
-	myDEM.setTimestamp(rock_pointcloud.time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 	
 	// unless only distance frame is recquired, save color frame
 	if(save_frame || save_dem || save_pc)
