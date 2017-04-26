@@ -204,11 +204,11 @@ void Task::generateTelemetryFromFrame()
 	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 
 	// unless only distance frame is recquired, save color frame
-	if(save_frame || save_dem || save_pc)
+	//if(save_frame || save_dem || save_pc || save_distance)
 		myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
 
 	// if frame or dem are recquired, send frame as telemetry
-	if(save_frame || save_dem)
+	if(save_frame || save_dem || save_distance)
 	{
 		this->writeTelemetry(myDEM.getImageLeftPath(),
 			telemetry_telecommand::messages::IMAGE,
