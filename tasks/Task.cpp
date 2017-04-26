@@ -232,15 +232,11 @@ void Task::generateTelemetryFromFrame()
 	}
 
 	// generate dem
-	if(save_dem || save_pc)
-	{
-		myDEM.distance2pointCloud(distance_image.data);
-		myDEM.pointCloud2Mesh();
-	}
-
-	// send dem as telemetry
 	if(save_dem)
 	{
+		myDEM.distance2pointCloud(distance_image.data);
+		myDEM.filterPointCloud();
+		myDEM.pointCloud2Mesh(true); // generate from filtered pointcloud
 		this->writeTelemetry(myDEM.getMeshPath(),
 			telemetry_telecommand::messages::DEM,
 			leftFrame->time);
@@ -249,6 +245,7 @@ void Task::generateTelemetryFromFrame()
 	// save pc and send as telemetry
 	if(save_pc)
 	{
+		myDEM.filterPointCloud();
 		myDEM.savePointCloud(true); // save filtered pointcloud
 		this->writeTelemetry(myDEM.getPointCloudPath(),
 			telemetry_telecommand::messages::POINT_CLOUD,
@@ -270,11 +267,11 @@ void Task::generateTelemetryFromPC()
 	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 	
 	// unless only distance frame is recquired, save color frame
-	if(save_frame || save_dem || save_pc)
+	//if(save_frame || save_dem || save_pc || save_distance)
 		myDEM.setColorFrame(dst, dst2);
 		
 	// if frame or dem are recquired, send frame as telemetry
-	if(save_frame || save_dem)
+	if(save_frame || save_dem || save_distance)
 	{
 		this->writeTelemetry(myDEM.getImageLeftPath(),
 			telemetry_telecommand::messages::IMAGE,
@@ -298,7 +295,8 @@ void Task::generateTelemetryFromPC()
 	// generate dem and send as telemetry
 	if(save_dem)
 	{
-		myDEM.pointCloud2Mesh();
+		myDEM.filterPointCloud();
+		myDEM.pointCloud2Mesh(true); // generate from filtered pointcloud
 		this->writeTelemetry(myDEM.getMeshPath(),
 			telemetry_telecommand::messages::DEM,
 			leftFrame->time);
@@ -307,7 +305,8 @@ void Task::generateTelemetryFromPC()
 	// save pointcloud and send as telemetry
 	if(save_pc)
 	{
-		myDEM.savePointCloud(true); // save unfiltered pointcloud
+		myDEM.filterPointCloud();
+		myDEM.savePointCloud(true); // save filtered pointcloud
 		this->writeTelemetry(myDEM.getPointCloudPath(),
 			telemetry_telecommand::messages::POINT_CLOUD,
 			leftFrame->time);
