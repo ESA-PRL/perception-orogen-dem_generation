@@ -233,20 +233,20 @@ void Task::generateTelemetryFromFrame()
 	//if(save_frame || save_dem || save_pc || save_distance)
 	myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
 
-	// if frame or dem are recquired, send frame as telemetry
-	if(save_frame || save_dem || save_distance)
-	{
-		this->writeTelemetry(myDEM.getImageLeftPath(),
-			telemetry_telecommand::messages::IMAGE,
-			leftFrame->time);
-	}
-
-	// if wanted, save distance and send as telemetry
+	// As it is now, distance shal be sent before the color frame
 	if(save_distance)
 	{
 		myDEM.saveDistanceFrame(distance_image.data);	
 		this->writeTelemetry(myDEM.getDistanceFramePath(),
 			telemetry_telecommand::messages::DISTANCE,
+			leftFrame->time);
+	}
+	
+	// if frame or dem are recquired, send frame as telemetry
+	if(save_frame || save_dem || save_distance)
+	{
+		this->writeTelemetry(myDEM.getImageLeftPath(),
+			telemetry_telecommand::messages::IMAGE,
 			leftFrame->time);
 	}
 
@@ -289,14 +289,7 @@ void Task::generateTelemetryFromPC()
 	//if(save_frame || save_dem || save_pc || save_distance)
 		myDEM.setColorFrame(dst, dst2);
 		
-	// if frame or dem are recquired, send frame as telemetry
-	if(save_frame || save_dem || save_distance)
-	{
-		this->writeTelemetry(myDEM.getImageLeftPath(),
-			telemetry_telecommand::messages::IMAGE,
-			leftFrame->time);
-	}
-	
+	// As it is now, distance shal be sent before the color frame
 	// if wanted, save distance and send as telemetry
 	if(save_distance)
 	{
@@ -304,6 +297,14 @@ void Task::generateTelemetryFromPC()
 		myDEM.saveDistanceFrame(distance_image.data);	
 		this->writeTelemetry(myDEM.getDistanceFramePath(),
 			telemetry_telecommand::messages::DISTANCE,
+			leftFrame->time);
+	}
+		
+	// if frame or dem are recquired, send frame as telemetry
+	if(save_frame || save_dem || save_distance)
+	{
+		this->writeTelemetry(myDEM.getImageLeftPath(),
+			telemetry_telecommand::messages::IMAGE,
 			leftFrame->time);
 	}
 	
