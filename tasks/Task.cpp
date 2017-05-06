@@ -327,8 +327,8 @@ void Task::generateTelemetryFromPC()
 	// save pointcloud and send as telemetry
 	if(save_pc)
 	{
-		myDEM.filterPointCloud();
-		myDEM.savePointCloud(true); // save filtered pointcloud
+		//myDEM.filterPointCloud();
+		myDEM.savePointCloud(false); // save filtered pointcloud
 		this->writeTelemetry(myDEM.getPointCloudPath(),
 			telemetry_telecommand::messages::POINT_CLOUD,
 			leftFrame->time);
