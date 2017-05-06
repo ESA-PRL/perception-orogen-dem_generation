@@ -120,19 +120,7 @@ void Task::updateHook()
 		// received only distance frame (stereocamera is connected)
 		else if(_distance_frame.connected())
 		{
-			// only frame is needed
-			if(!save_dem && !save_pc && !save_distance)
-			{
-				this->generateTelemetryFromFrame();
-			}
-			// if not, we need to wait for the distance frame coming from stereo (TO BE CHECKED IF IT WORKS PROPERLY)
-			else
-			{
-				while(_distance_frame.read(distance_image) != RTT::NewData)
-					usleep(1000);
-				
-				this->generateTelemetryFromFrame();
-			}
+			this->generateTelemetryFromFrame();
 		}
 		else
 			std::cout << "WARNING!! Nothing is connected to " << camera_name << " associated DEM generation component" << std::endl;
@@ -203,10 +191,19 @@ void Task::writeTelemetry(std::string productPath,
 void Task::generateTelemetryFromFrame()
 {
 	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> leftFrame, rightFrame;
-
-
-	// convert frame to opencv format with proper color encoding (standard opencv is BGR)
+	
+	// no need to check newdata because it is sent before te tc for sure
 	_left_frame_rect.read(leftFrame);
+
+
+	// if not only frame we need to wait for the distance frame coming from stereo (TO BE CHECKED IF IT WORKS PROPERLY)
+	if(save_dem || save_pc || save_distance)
+	{
+		while(_distance_frame.read(distance_image) != RTT::NewData)
+			usleep(1000);
+	}
+	
+	// convert frame to opencv format with proper color encoding (standard opencv is BGR)
 	cv::Mat dst, dst2;
 	if(leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
 		leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
