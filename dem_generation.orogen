@@ -39,8 +39,14 @@ task_context "Task" do
     property("pointcloud_cut_min","/base/Vector4d").doc("Minimum vertex where a local point cloud is supposed to be valid within the rover frame")
     property("pointcloud_cut_max","/base/Vector4d").doc("Maximum vertex where a local point cloud is supposed to be valid within the rover frame")
     
+    # file compression properties
+    property("enable_compression","bool",false).doc("Enable/disable products compression")
+    property("compression_level","float",50).doc("Compression rae for jpg. 0 worse quality, 100 best quality")
+
+    
     # other properties
     property "cameraCalibration", "/frame_helper/CameraCalibration"
+    
 
 
     # Input ports

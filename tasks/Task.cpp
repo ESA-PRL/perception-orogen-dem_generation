@@ -60,6 +60,8 @@ bool Task::configureHook()
 	Eigen::Vector4d b = _pointcloud_cut_max.get();
 	myDEM.setPcFiltersParameters(a.cast<float>(), b.cast<float>(), _leaf_size.get(), _k_points.get());
 	
+	myDEM.compressProducts(_enable_compression.get(), _compression_level.get());
+
 	sync_count = 0;
      
     return true;
