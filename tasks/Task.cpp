@@ -257,10 +257,13 @@ void Task::generateTelemetryFromFrame()
 	{
 		myDEM.distance2pointCloud(distance_image.data);
 		myDEM.filterPointCloud();
-		myDEM.pointCloud2Mesh(true); // generate from filtered pointcloud
-		this->writeTelemetry(myDEM.getMeshPath(),
-			telemetry_telecommand::messages::DEM,
-			leftFrame->time);
+		int error = myDEM.pointCloud2Mesh(true); // generate from filtered pointcloud
+		if(!error)
+		{
+			this->writeTelemetry(myDEM.getMeshPath(),
+				telemetry_telecommand::messages::DEM,
+				leftFrame->time);
+		}
 	}
 
 	// save pc and send as telemetry
@@ -318,10 +321,13 @@ void Task::generateTelemetryFromPC()
 	if(save_dem)
 	{
 		myDEM.filterPointCloud();
-		myDEM.pointCloud2Mesh(true); // generate from filtered pointcloud
-		this->writeTelemetry(myDEM.getMeshPath(),
-			telemetry_telecommand::messages::DEM,
-			leftFrame->time);
+		int error = myDEM.pointCloud2Mesh(true); // generate from filtered pointcloud
+		if(!error)
+		{
+			this->writeTelemetry(myDEM.getMeshPath(),
+				telemetry_telecommand::messages::DEM,
+				leftFrame->time);
+		}
 	}
 	
 	// save pointcloud and send as telemetry
