@@ -57,6 +57,9 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
 		telemetry_telecommand::messages::Telemetry telemetry;
 		bool save_frame, save_distance, save_dem, save_pc; // save bools
 		int sync_count;
+		frame_helper::FrameHelper left_conv; // used to rectify left camera
+		base::samples::frame::Frame leftFrameTarget;
+
 
 
 

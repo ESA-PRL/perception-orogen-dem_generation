@@ -61,6 +61,9 @@ bool Task::configureHook()
 	myDEM.setPcFiltersParameters(a.cast<float>(), b.cast<float>(), _leaf_size.get(), _k_points.get());
 	
 	myDEM.compressProducts(_enable_compression.get(), _compression_level.get());
+	
+	left_conv.setCalibrationParameter(calib);
+
 
 	sync_count = 0;
      
@@ -191,7 +194,7 @@ void Task::writeTelemetry(std::string productPath,
 void Task::generateTelemetryFromFrame()
 {
 	RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> leftFrame, rightFrame;
-	
+
 	// no need to check newdata because it is sent before te tc for sure
 	_left_frame_rect.read(leftFrame);
 	std::cout << "frame time " << leftFrame->time << std::endl;
@@ -231,21 +234,24 @@ void Task::generateTelemetryFromFrame()
 	}
 	// convert frame to opencv format with proper color encoding (standard opencv is BGR)
 	cv::Mat dst, dst2;
+	base::samples::frame::Frame rock_dst, frame_buffer3;
+	rock_dst.init(leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->getDataDepth(),base::samples::frame::MODE_RGB,-1);
+
 	if(leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
 		leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
 		leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
 		leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
 	{
-		base::samples::frame::Frame rock_dst, frame_buffer3;
-		rock_dst.init(leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->getDataDepth(),base::samples::frame::MODE_RGB,-1);
 		frame_buffer3.init( leftFrame->getWidth(), leftFrame->getHeight(), leftFrame->getDataDepth(),rock_dst.getFrameMode(),-1);
 		frame_helper::FrameHelper::convertBayerToRGB24(leftFrame->getImageConstPtr(),frame_buffer3.getImagePtr(),leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->frame_mode); 
+		left_conv.convert( rock_dst, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true );	// rectification of frame
 		dst = frame_helper::FrameHelper::convertToCvMat(rock_dst);
 		cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frame_buffer3),dst,cv::COLOR_RGB2BGR);
     }
     else if(leftFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
     {
-		dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
+		left_conv.convert( *leftFrame, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true );	// rectification of frame
+		dst = frame_helper::FrameHelper::convertToCvMat(rock_dst);
 		cv::cvtColor(dst, dst, cv::COLOR_RGB2BGR);
 	}
 	else
