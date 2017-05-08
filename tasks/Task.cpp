@@ -194,15 +194,41 @@ void Task::generateTelemetryFromFrame()
 	
 	// no need to check newdata because it is sent before te tc for sure
 	_left_frame_rect.read(leftFrame);
-
+	std::cout << "frame time " << leftFrame->time << std::endl;
 
 	// if not only frame we need to wait for the distance frame coming from stereo (TO BE CHECKED IF IT WORKS PROPERLY)
 	if(save_dem || save_pc || save_distance)
 	{
-		while(_distance_frame.read(distance_image) != RTT::NewData)
-			usleep(1000);
+		bool sync = false;
+		int wait_count = 0;
+		// for some reason, same distance ireturn READ::NEW twice
+		// hand syynchro is then required
+		while(!sync)
+		{
+			int64_t time_diff = distance_image.time.toMicroseconds() - leftFrame->time.toMicroseconds();
+			if (time_diff > 0) // distance_image in the future (should never happen)
+			{
+				sync = true; // should not happens, but at least program not stuck
+				std::cout << "WARNING FROM DEM_GENERATION, DISTANCE FRAME COMING FROM THE FUTURE TO KILL US!!\n";
+			}
+			else if(time_diff <0) // must wait for new distance image
+			{
+				_distance_frame.read(distance_image);
+				usleep(1000);
+			}
+			else // ok, in sync
+			{
+				sync = true;
+			}
+			wait_count++;
+			if(wait_count > 5000) // 5 seconds wait for a distance frame
+			{
+				std::cout << "WARNING FROM DEM_GENERATION, TOOK TOO MUCH TIME TO RECEIVE A DISTANCE FRAME THERE IS A SERIOUS ISSUE SOMEWHERE\n";
+				return;
+			}
+		}
+		std::cout << "distance time " << distance_image.time << std::endl;
 	}
-	
 	// convert frame to opencv format with proper color encoding (standard opencv is BGR)
 	cv::Mat dst, dst2;
 	if(leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
