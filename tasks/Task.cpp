@@ -298,6 +298,7 @@ void Task::generateTelemetryFromFrame()
 	// save pc and send as telemetry
 	if(save_pc)
 	{
+		myDEM.distance2pointCloud(distance_image.data);
 		myDEM.filterPointCloud();
 		myDEM.savePointCloud(true); // save filtered pointcloud
 		this->writeTelemetry(myDEM.getPointCloudPath(),
