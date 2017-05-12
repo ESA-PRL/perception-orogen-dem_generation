@@ -41,7 +41,7 @@ task_context "Task" do
     
     # file compression properties
     property("enable_compression","bool",false).doc("Enable/disable products compression")
-    property("compression_level","float",50).doc("Compression rae for jpg. 0 worse quality, 100 best quality")
+    property("compression_level","float",20).doc("Compression rae for jpg. 0 worse quality, 100 best quality")
 
     
     # other properties
