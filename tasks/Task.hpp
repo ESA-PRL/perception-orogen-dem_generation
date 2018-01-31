@@ -6,7 +6,7 @@
 #include <opencv/cv.h>
 #include <opencv2/highgui/highgui.hpp>
 
-#include <base/samples/frame.h>
+#include <base/samples/Frame.hpp>
 #include "dem_generation/TaskBase.hpp"
 #include <frame_helper/FrameHelper.h>
 
