@@ -14,6 +14,13 @@
 
 #include <dem_generation/dem_generation.hpp>
 
+#include <velodyne_lidar/pointcloudConvertHelper.hpp>
+#include <velodyne_lidar/MultilevelLaserScan.h>
+
+#include <telemetry_telecommand/Messages.hpp>
+
+#include <unistd.h>
+
 
 namespace dem_generation {
 
@@ -42,6 +49,16 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
 		DEM myDEM;
 		base::samples::DistanceImage distance_image;
 		std::string camera_name, save_directory;
+		base::samples::Pointcloud rock_pointcloud;
+		pcl::PointCloud<pcl::PointXYZ> input_pointcloud;
+		velodyne_lidar::MultilevelLaserScan input_laser_scan;
+		std::vector<Eigen::Vector3d> points;
+		std::vector<telemetry_telecommand::messages::Telecommand> telecommand_vec;
+		telemetry_telecommand::messages::Telemetry telemetry;
+		bool save_frame, save_distance, save_dem, save_pc; // save bools
+		int sync_count;
+		frame_helper::FrameHelper left_conv; // used to rectify left camera
+		base::samples::frame::Frame leftFrameTarget;
 
 
 
@@ -121,6 +138,17 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
          * before calling start() again.
          */
         void cleanupHook();
+        
+        void setProducts();
+        void writeTelemetry(std::string productPath,
+						telemetry_telecommand::messages::ProductType type,
+						base::Time timestamp);
+		void generateTelemetryFromFrame();
+		void generateTelemetryFromPC();
+
+        // copied from GIcp.cpp / hpp
+		void toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointCloud< pcl::PointXYZ >& pcl_pc, double density = 1.0);
+
     };
 }
 
