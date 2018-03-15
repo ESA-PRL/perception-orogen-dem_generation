@@ -153,7 +153,8 @@ void Task::cleanupHook()
 // and save the products
 void Task::setProducts()
 {
-	save_frame = false;
+	save_single_frame = false;
+	save_both_frames = false;
 	save_distance = false;
 	save_dem = false;
 	save_pc = false;
@@ -162,7 +163,10 @@ void Task::setProducts()
 	for(int i = 0; i < tSize; i++)
 	{
 		if(telecommand_vec[i].productType == telemetry_telecommand::messages::IMAGE)
-			save_frame = true;
+			save_single_frame = true;
+
+		if(telecommand_vec[i].productType == telemetry_telecommand::messages::STEREO)
+			save_both_frames = true;
 		
 		if(telecommand_vec[i].productType == telemetry_telecommand::messages::DISTANCE)
 			save_distance = true;
@@ -197,7 +201,16 @@ void Task::generateTelemetryFromFrame()
 
 	// no need to check newdata because it is sent before te tc for sure
 	_left_frame_rect.read(leftFrame);
-	std::cout << "frame time " << leftFrame->time << std::endl;
+	std::cout << "left frame time " << leftFrame->time << std::endl;
+
+    // right frame is sent the same way as the left frame,
+    // without intermediate processing, so we should not have
+    // to wait for the frame to arrive.
+    if(save_both_frames)
+    {
+        _right_frame_rect.read(rightFrame);
+        std::cout << "right frame time " << rightFrame->time << std::endl;
+    }
 
 	// if not only frame we need to wait for the distance frame coming from stereo (TO BE CHECKED IF IT WORKS PROPERLY)
 	if(save_dem || save_pc || save_distance)
@@ -232,6 +245,7 @@ void Task::generateTelemetryFromFrame()
 		}
 		std::cout << "distance time " << distance_image.time << std::endl;
 	}
+
 	// convert frame to opencv format with proper color encoding (standard opencv is BGR)
 	cv::Mat dst, dst2;
 	base::samples::frame::Frame rock_dst, frame_buffer3;
@@ -243,7 +257,7 @@ void Task::generateTelemetryFromFrame()
 		leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
 	{
 		frame_buffer3.init( leftFrame->getWidth(), leftFrame->getHeight(), leftFrame->getDataDepth(),rock_dst.getFrameMode(),-1);
-		frame_helper::FrameHelper::convertBayerToRGB24(leftFrame->getImageConstPtr(),frame_buffer3.getImagePtr(),leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->frame_mode); 
+		frame_helper::FrameHelper::convertBayerToRGB24(leftFrame->getImageConstPtr(),frame_buffer3.getImagePtr(),leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->frame_mode);
 		left_conv.convert( rock_dst, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true );	// rectification of frame
 		dst = frame_helper::FrameHelper::convertToCvMat(rock_dst);
 		cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frame_buffer3),dst,cv::COLOR_RGB2BGR);
@@ -255,13 +269,46 @@ void Task::generateTelemetryFromFrame()
 		cv::cvtColor(dst, dst, cv::COLOR_RGB2BGR);
 	}
 	else
-		std::cerr << "[DEM GENERATION OROGEN]Color frame with non supported encoding, add conversion here " << leftFrame->getFrameMode() << "\n";
+    {
+		std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << leftFrame->getFrameMode() << "\n";
+    }
 	
 	dst2 = dst;
 	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 
 	// unless only distance frame is recquired, save color frame
-	//if(save_frame || save_dem || save_pc || save_distance)
+	//if(save_single_frame || save_dem || save_pc || save_distance)
+	myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
+
+
+    // same for right frame
+    // TODO move to function
+	if(rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
+		rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
+		rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
+		rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
+	{
+		frame_buffer3.init( rightFrame->getWidth(), rightFrame->getHeight(), rightFrame->getDataDepth(),rock_dst.getFrameMode(),-1);
+		frame_helper::FrameHelper::convertBayerToRGB24(rightFrame->getImageConstPtr(),frame_buffer3.getImagePtr(),rightFrame->getWidth(),rightFrame->getHeight(),rightFrame->frame_mode);
+		left_conv.convert( rock_dst, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true );	// rectification of frame
+		dst = frame_helper::FrameHelper::convertToCvMat(rock_dst);
+		cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frame_buffer3),dst,cv::COLOR_RGB2BGR);
+    }
+    else if(rightFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
+    {
+		left_conv.convert( *rightFrame, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true );	// rectification of frame
+		dst = frame_helper::FrameHelper::convertToCvMat(rock_dst);
+		cv::cvtColor(dst, dst, cv::COLOR_RGB2BGR);
+	}
+	else
+    {
+		std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << rightFrame->getFrameMode() << "\n";
+    }
+	
+	dst2 = dst;
+
+	// unless only distance frame is recquired, save color frame
+	//if(save_single_frame || save_dem || save_pc || save_distance)
 	myDEM.setColorFrame(dst, dst2); // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
 
 	// As it is now, distance shal be sent before the color frame
@@ -274,10 +321,22 @@ void Task::generateTelemetryFromFrame()
 	}
 	
 	// if frame or dem are recquired, send frame as telemetry
-	if(save_frame || save_dem || save_distance)
+	if(save_single_frame || save_dem || save_distance)
 	{
 		this->writeTelemetry(myDEM.getImageLeftPath(),
 			telemetry_telecommand::messages::IMAGE,
+			leftFrame->time);
+	}
+
+    // this case is treated separately in order to set the mode to STEREO for
+    // both images
+	if(save_both_frames)
+	{
+		this->writeTelemetry(myDEM.getImageLeftPath(),
+			telemetry_telecommand::messages::STEREO_LEFT,
+			leftFrame->time);
+		this->writeTelemetry(myDEM.getImageRightPath(),
+			telemetry_telecommand::messages::STEREO_RIGHT,
 			leftFrame->time);
 	}
 
@@ -321,7 +380,7 @@ void Task::generateTelemetryFromPC()
 	myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 	
 	// unless only distance frame is recquired, save color frame
-	//if(save_frame || save_dem || save_pc || save_distance)
+	//if(save_single_frame || save_dem || save_pc || save_distance)
 		myDEM.setColorFrame(dst, dst2);
 		
 	// As it is now, distance shal be sent before the color frame
@@ -336,7 +395,7 @@ void Task::generateTelemetryFromPC()
 	}
 		
 	// if frame or dem are recquired, send frame as telemetry
-	if(save_frame || save_dem || save_distance)
+	if(save_single_frame || save_dem || save_distance)
 	{
 		this->writeTelemetry(myDEM.getImageLeftPath(),
 			telemetry_telecommand::messages::IMAGE,

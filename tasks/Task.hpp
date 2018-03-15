@@ -45,7 +45,7 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
     {
 	friend class TaskBase;
     protected:
-    
+
 		DEM myDEM;
 		base::samples::DistanceImage distance_image;
 		std::string camera_name, save_directory;
@@ -55,7 +55,7 @@ tasks/Task.cpp, and will be put in the dem_generation namespace.
 		std::vector<Eigen::Vector3d> points;
 		std::vector<telemetry_telecommand::messages::Telecommand> telecommand_vec;
 		telemetry_telecommand::messages::Telemetry telemetry;
-		bool save_frame, save_distance, save_dem, save_pc; // save bools
+		bool save_single_frame, save_both_frames, save_distance, save_dem, save_pc; // save bools
 		int sync_count;
 		frame_helper::FrameHelper left_conv; // used to rectify left camera
 		base::samples::frame::Frame leftFrameTarget;
