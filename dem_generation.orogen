@@ -1,14 +1,10 @@
 name "dem_generation"
-# Optionally declare the version number
-# version "0.1"
 
 import_types_from "dem_generationTypes.hpp"
-
 
 using_library "dem_generation"
 using_library "pcl_common-1.7"
 using_library "frame_helper"
-#using_library "opencv
 using_library "velodyne_lidar"
 using_library "telemetry_telecommand"
 import_types_from "telemetry_telecommand/Messages.hpp"
@@ -17,47 +13,30 @@ import_types_from "base"
 import_types_from "frame_helper/Calibration.h"
 import_types_from "velodyne_lidar/MultilevelLaserScan.h"
 
-# Declare a new task context (i.e., a component)
-#
-# The corresponding C++ class can be edited in tasks/Task.hpp and
-# tasks/Task.cpp, and will be put in the dem_generation namespace.
 task_context "Task" do
-    # This is the default from now on, and should not be removed. Rock will
-    # transition to a setup where all components use a configuration step.
     needs_configuration
 
-    # Configuration property
-    # in the C++ code with # _config_value.get() and _config_value.set(new_value).
-    
     # path properties
     property "camera_name", "/std/string"
     property "save_directory", "/std/string"
-    
+
     #filters properties
     property("leaf_size","float",0.015).doc("Leaf size of pc voxel filter")
     property("k_points","int",20).doc("K points for statistical pc filter")
     property("pointcloud_cut_min","/base/Vector4d").doc("Minimum vertex where a local point cloud is supposed to be valid within the rover frame")
     property("pointcloud_cut_max","/base/Vector4d").doc("Maximum vertex where a local point cloud is supposed to be valid within the rover frame")
-    
+
     # file compression properties
     property("enable_compression","bool",false).doc("Enable/disable products compression")
     property("compression_level","float",20).doc("Compression rae for jpg. 0 worse quality, 100 best quality")
 
-    
     # other properties
     property "cameraCalibration", "/frame_helper/CameraCalibration"
-    
 
-
-    # Input ports
-    # Data can be retrieved using _input.read(value), which returns true if data
-    # was available, and false otherwise. _input.connected() returns if this
-    # input is connected to an output or not.
-    
     # Telecommand input ports
-	input_port('telecommands_in', 'std::vector<telemetry_telecommand/messages/Telecommand>').
-		doc 'Input telecommands to be served by the component'
-	
+    input_port('telecommands_in', 'std::vector<telemetry_telecommand/messages/Telecommand>').
+        doc 'Input telecommands to be served by the component'
+
     # Frame input port
     input_port('left_frame_rect', ro_ptr('base::samples::frame::Frame')).
         doc 'Rectified Left camera frame of PanCam.'
@@ -76,22 +55,16 @@ task_context "Task" do
     input_port("laser_scans", "velodyne_lidar::MultilevelLaserScan").
         doc 'laserscans of the upper head'
     input_port("ir_interp_frame", ro_ptr("/base/samples/frame/Frame")).
-	   doc("video interpolated ir image retrieved from LiDAR")
+       doc("video interpolated ir image retrieved from LiDAR")
     input_port("range_interp_frame", ro_ptr("/base/samples/frame/Frame")).
-	   doc("video interpolated range image retrieved from LiDAR")
+       doc("video interpolated range image retrieved from LiDAR")
 
-
-    # Output ports
-    # Data can be written using _output.write(value). _output.connected() returns
-    # if this output is connected to an input or not.
     output_port "telemetry_out", 'telemetry_telecommand/messages/Telemetry'
-	
+
     # an incremental number is written to this port after each iteration
     # of the update hook
-	output_port "sync_out", "int"
+    output_port "sync_out", "int"
 
-
-	# Driving
-    port_driven 'telecommands_in' 
+    # Driving
+    port_driven 'telecommands_in'
 end
-
