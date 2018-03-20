@@ -238,6 +238,8 @@ void Task::generateTelemetryFromFrame()
         std::cout << "distance time " << distance_image.time << std::endl;
     }
 
+    myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
+
     // convert frame to opencv format with proper color encoding (standard opencv is BGR)
     cv::Mat dst_left, dst_right;
     base::samples::frame::Frame rock_dst, frame_buffer3;
@@ -264,35 +266,38 @@ void Task::generateTelemetryFromFrame()
     {
         std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << leftFrame->getFrameMode() << "\n";
     }
+    myDEM.setColorFrame(dst_left);
 
-    myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 
     // same for right frame
     // TODO move to function
-    if(rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
-            rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
-            rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
-            rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
+    if (save_both_frames) // we did not receive a rightFrame otherwise
     {
-        frame_buffer3.init( rightFrame->getWidth(), rightFrame->getHeight(), rightFrame->getDataDepth(),rock_dst.getFrameMode(),-1);
-        frame_helper::FrameHelper::convertBayerToRGB24(rightFrame->getImageConstPtr(),frame_buffer3.getImagePtr(),rightFrame->getWidth(),rightFrame->getHeight(),rightFrame->frame_mode);
-        left_conv.convert( rock_dst, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true );    // rectification of frame
-        dst_right = frame_helper::FrameHelper::convertToCvMat(rock_dst);
-        cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frame_buffer3),dst_right,cv::COLOR_RGB2BGR);
-    }
-    else if(rightFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
-    {
-        left_conv.convert( *rightFrame, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
-        dst_right = frame_helper::FrameHelper::convertToCvMat(rock_dst);
-        cv::cvtColor(dst_right, dst_right, cv::COLOR_RGB2BGR);
-    }
-    else
-    {
-        std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << rightFrame->getFrameMode() << "\n";
+        if(rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
+                rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
+                rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
+                rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
+        {
+            frame_buffer3.init( rightFrame->getWidth(), rightFrame->getHeight(), rightFrame->getDataDepth(),rock_dst.getFrameMode(),-1);
+            frame_helper::FrameHelper::convertBayerToRGB24(rightFrame->getImageConstPtr(),frame_buffer3.getImagePtr(),rightFrame->getWidth(),rightFrame->getHeight(),rightFrame->frame_mode);
+            left_conv.convert( rock_dst, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true );    // rectification of frame
+            dst_right = frame_helper::FrameHelper::convertToCvMat(rock_dst);
+            cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frame_buffer3),dst_right,cv::COLOR_RGB2BGR);
+        }
+        else if(rightFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
+        {
+            left_conv.convert( *rightFrame, rock_dst, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
+            dst_right = frame_helper::FrameHelper::convertToCvMat(rock_dst);
+            cv::cvtColor(dst_right, dst_right, cv::COLOR_RGB2BGR);
+        }
+        else
+        {
+            std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << rightFrame->getFrameMode() << "\n";
+        }
+        myDEM.setColorFrame(dst_right);
     }
 
     // to opencv format. Basically set up so that first it is read to internal variable, then converted to opencv and sent over to my library
-    myDEM.setColorFrameStereo(dst_left, dst_right);
 
     // As it is now, distance shall be sent before the color frame
     if(save_distance)
@@ -458,3 +463,5 @@ void Task::toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointClo
     /** All data points are finite (no NaN or Infinite) **/
     pcl_pc.is_dense = true;
 }
+
+
