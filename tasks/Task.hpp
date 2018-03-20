@@ -40,6 +40,11 @@ namespace dem_generation {
         frame_helper::FrameHelper left_conv; // used to rectify camera frames
         base::samples::frame::Frame leftFrameTarget;
 
+        /** Convert frame to OpenCV format with proper color encoding and rectify the image.
+         *  Standard OpenCV is BGR.
+         */
+        void correctColorsAndRectify(RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> imgFrame, cv::Mat &dst);
+
     public:
         Task(std::string const& name = "dem_generation::Task");
         Task(std::string const& name, RTT::ExecutionEngine* engine);
