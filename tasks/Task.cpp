@@ -244,14 +244,85 @@ void Task::generateTelemetryFromFrame()
     if (save_both_frames)
     {
         cv::Mat dst_left, dst_right;
-        correctColorsAndRectify(leftFrame, dst_left);
-        correctColorsAndRectify(rightFrame, dst_right);
+        base::samples::frame::Frame dstRockLeft, dstRockRight, frameBuffer;
+        dstRockLeft.init(leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->getDataDepth(),base::samples::frame::MODE_RGB,-1);
+
+        if(leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
+                leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
+                leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
+                leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
+        {
+            frameBuffer.init( leftFrame->getWidth(), leftFrame->getHeight(), leftFrame->getDataDepth(),dstRockLeft.getFrameMode(),-1);
+            frame_helper::FrameHelper::convertBayerToRGB24(leftFrame->getImageConstPtr(),frameBuffer.getImagePtr(),leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->frame_mode);
+            left_conv.convert( dstRockLeft, dstRockLeft, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
+            dst_left = frame_helper::FrameHelper::convertToCvMat(dstRockLeft);
+            cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frameBuffer),dst_left,cv::COLOR_RGB2BGR);
+        }
+        else if(leftFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
+        {
+            left_conv.convert( *leftFrame, dstRockLeft, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
+            dst_left = frame_helper::FrameHelper::convertToCvMat(dstRockLeft);
+            cv::cvtColor(dst_left, dst_left, cv::COLOR_RGB2BGR);
+        }
+        else
+        {
+            std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << leftFrame->getFrameMode() << "\n";
+        }
+
+        dstRockRight.init(rightFrame->getWidth(),rightFrame->getHeight(),rightFrame->getDataDepth(),base::samples::frame::MODE_RGB,-1);
+
+        if(rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
+                rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
+                rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
+                rightFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
+        {
+            frameBuffer.init( rightFrame->getWidth(), rightFrame->getHeight(), rightFrame->getDataDepth(),dstRockRight.getFrameMode(),-1);
+            frame_helper::FrameHelper::convertBayerToRGB24(rightFrame->getImageConstPtr(),frameBuffer.getImagePtr(),rightFrame->getWidth(),rightFrame->getHeight(),rightFrame->frame_mode);
+            left_conv.convert( dstRockRight, dstRockRight, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
+            dst_right = frame_helper::FrameHelper::convertToCvMat(dstRockRight);
+            cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frameBuffer),dst_right,cv::COLOR_RGB2BGR);
+        }
+        else if(rightFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
+        {
+            left_conv.convert( *rightFrame, dstRockRight, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
+            dst_right = frame_helper::FrameHelper::convertToCvMat(dstRockRight);
+            cv::cvtColor(dst_right, dst_right, cv::COLOR_RGB2BGR);
+        }
+        else
+        {
+            std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << rightFrame->getFrameMode() << "\n";
+        }
+
         myDEM.setColorFrameStereo(dst_left, dst_right);
     }
     else
     {
         cv::Mat dst;
-        correctColorsAndRectify(leftFrame, dst);
+        base::samples::frame::Frame dstRock, frameBuffer;
+        dstRock.init(leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->getDataDepth(),base::samples::frame::MODE_RGB,-1);
+
+        if(leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
+                leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
+                leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
+                leftFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
+        {
+            frameBuffer.init( leftFrame->getWidth(), leftFrame->getHeight(), leftFrame->getDataDepth(),dstRock.getFrameMode(),-1);
+            frame_helper::FrameHelper::convertBayerToRGB24(leftFrame->getImageConstPtr(),frameBuffer.getImagePtr(),leftFrame->getWidth(),leftFrame->getHeight(),leftFrame->frame_mode);
+            left_conv.convert( dstRock, dstRock, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
+            dst = frame_helper::FrameHelper::convertToCvMat(dstRock);
+            cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frameBuffer),dst,cv::COLOR_RGB2BGR);
+        }
+        else if(leftFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
+        {
+            left_conv.convert( *leftFrame, dstRock, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
+            dst = frame_helper::FrameHelper::convertToCvMat(dstRock);
+            cv::cvtColor(dst, dst, cv::COLOR_RGB2BGR);
+        }
+        else
+        {
+            std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << leftFrame->getFrameMode() << "\n";
+        }
+
         myDEM.setColorFrame(dst);
     }
 
@@ -418,32 +489,4 @@ void Task::toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointClo
 
     /** All data points are finite (no NaN or Infinite) **/
     pcl_pc.is_dense = true;
-}
-
-void Task::correctColorsAndRectify(RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> imgFrame, cv::Mat &dst)
-{
-    base::samples::frame::Frame dstRock, frameBuffer;
-    dstRock.init(imgFrame->getWidth(),imgFrame->getHeight(),imgFrame->getDataDepth(),base::samples::frame::MODE_RGB,-1);
-
-    if(imgFrame->getFrameMode() == base::samples::frame::MODE_BAYER_RGGB ||
-       imgFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GRBG ||
-       imgFrame->getFrameMode() == base::samples::frame::MODE_BAYER_BGGR ||
-       imgFrame->getFrameMode() == base::samples::frame::MODE_BAYER_GBRG)
-    {
-        frameBuffer.init( imgFrame->getWidth(), imgFrame->getHeight(), imgFrame->getDataDepth(),dstRock.getFrameMode(),-1);
-        frame_helper::FrameHelper::convertBayerToRGB24(imgFrame->getImageConstPtr(),frameBuffer.getImagePtr(),imgFrame->getWidth(),imgFrame->getHeight(),imgFrame->frame_mode);
-        left_conv.convert( dstRock, dstRock, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
-        dst = frame_helper::FrameHelper::convertToCvMat(dstRock);
-        cv::cvtColor(frame_helper::FrameHelper::convertToCvMat(frameBuffer),dst,cv::COLOR_RGB2BGR);
-    }
-    else if(imgFrame->getFrameMode() == base::samples::frame::MODE_RGB) // already in RGB mode
-    {
-        left_conv.convert( *imgFrame, dstRock, 0, 0, frame_helper::INTER_LINEAR, true ); // rectification of frame
-        dst = frame_helper::FrameHelper::convertToCvMat(dstRock);
-        cv::cvtColor(dst, dst, cv::COLOR_RGB2BGR);
-    }
-    else
-    {
-        std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << imgFrame->getFrameMode() << "\n";
-    }
 }
