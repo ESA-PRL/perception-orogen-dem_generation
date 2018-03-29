@@ -38,6 +38,12 @@ bool Task::configureHook()
         telemetry.productSource = telemetry_telecommand::messages::REAR;
     else if(camera_name == "FRONT")
         telemetry.productSource = telemetry_telecommand::messages::FRONT;
+    else if(camera_name == "PANCAM")
+        telemetry.productSource = telemetry_telecommand::messages::PANCAM;
+    else if(camera_name == "NAVCAM")
+        telemetry.productSource = telemetry_telecommand::messages::NAVCAM;
+    else if(camera_name == "LOCCAM")
+        telemetry.productSource = telemetry_telecommand::messages::LOCCAM;
     else
     {
         std::cout << " ERROR!! Unexisting or unsupported producer type/camera_name" << std::endl;
