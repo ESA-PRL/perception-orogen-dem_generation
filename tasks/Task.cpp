@@ -129,7 +129,6 @@ void Task::updateHook()
         // new process finished, write out sync port
         _sync_out.write(sync_count);
         sync_count++;
-
     }
 }
 
@@ -258,19 +257,8 @@ void Task::generateTelemetryFromFrame()
         cv::Mat cv_frame_right = frame_helper::FrameHelper::convertToCvMat(rock_frame_right);
 
         // convert to BGR color mode so we can save the image via OpenCV
-        if(leftFrame->getFrameMode() == base::samples::frame::MODE_RGB)
-            cv::cvtColor(cv_frame_left, cv_frame_left, cv::COLOR_RGB2BGR);
-        else if(leftFrame->getFrameMode() == base::samples::frame::MODE_GRAYSCALE)
-            cv::cvtColor(cv_frame_left, cv_frame_left, cv::COLOR_GRAY2BGR);
-        else
-            std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << leftFrame->getFrameMode() << "\n";
-
-        if(rightFrame->getFrameMode() == base::samples::frame::MODE_RGB)
-            cv::cvtColor(cv_frame_right, cv_frame_right, cv::COLOR_RGB2BGR);
-        else if(rightFrame->getFrameMode() == base::samples::frame::MODE_GRAYSCALE)
-            cv::cvtColor(cv_frame_right, cv_frame_right, cv::COLOR_GRAY2BGR);
-        else
-            std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << rightFrame->getFrameMode() << "\n";
+        cv::cvtColor(cv_frame_left,  cv_frame_left,  getConversionCode(leftFrame));
+        cv::cvtColor(cv_frame_right, cv_frame_right, getConversionCode(rightFrame));
 
         // prepare path to image and save to disk
         myDEM.setColorFrameStereo(cv_frame_left, cv_frame_right);
@@ -283,12 +271,7 @@ void Task::generateTelemetryFromFrame()
         cv::Mat cv_frame = frame_helper::FrameHelper::convertToCvMat(rock_frame);
 
         // convert to BGR color mode so we can save the image via OpenCV
-        if(leftFrame->getFrameMode() == base::samples::frame::MODE_RGB)
-            cv::cvtColor(cv_frame, cv_frame, cv::COLOR_RGB2BGR);
-        else if(leftFrame->getFrameMode() == base::samples::frame::MODE_GRAYSCALE)
-            cv::cvtColor(cv_frame, cv_frame, cv::COLOR_GRAY2BGR);
-        else
-            std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << leftFrame->getFrameMode() << "\n";
+        cv::cvtColor(cv_frame, cv_frame, getConversionCode(leftFrame));
 
         // prepare path to image and save to disk
         myDEM.setColorFrame(cv_frame);
@@ -357,7 +340,6 @@ void Task::generateTelemetryFromPC()
     // convert intensity frame to opencv format
     _left_frame_rect.read(leftFrame);
     cv::Mat dst = frame_helper::FrameHelper::convertToCvMat(*leftFrame);
-
     // generate products
     myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
 
@@ -457,4 +439,26 @@ void Task::toPCLPointCloud(const ::base::samples::Pointcloud & pc, pcl::PointClo
 
     /** All data points are finite (no NaN or Infinite) **/
     pcl_pc.is_dense = true;
+}
+
+/**
+ * Returns the conversion code to be used in OpenCV's cvtColor(..) to
+ * convert from the color mode of the passed frame (pointer) to BGR.
+ * Returns -1 if requested mode is not supported.
+ */
+int Task::getConversionCode(RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frame)
+{
+    if(frame->getFrameMode() == base::samples::frame::MODE_RGB)
+    {
+        return cv::COLOR_RGB2BGR;
+    }
+    else if(frame->getFrameMode() == base::samples::frame::MODE_GRAYSCALE)
+    {
+        return cv::COLOR_GRAY2BGR;
+    }
+    else
+    {
+        std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << frame->getFrameMode() << "\n";
+        return -1;
+    }
 }

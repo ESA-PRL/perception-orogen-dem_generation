@@ -39,6 +39,7 @@ namespace dem_generation {
         int sync_count;
         frame_helper::FrameHelper left_conv; // used to rectify camera frames
         base::samples::frame::Frame leftFrameTarget;
+        int getConversionCode(RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frame);
 
     public:
         Task(std::string const& name = "dem_generation::Task");
