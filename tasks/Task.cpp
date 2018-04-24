@@ -46,7 +46,7 @@ bool Task::configureHook()
         telemetry.productSource = telemetry_telecommand::messages::LOCCAM;
     else
     {
-        std::cout << " ERROR!! Unexisting or unsupported producer type/camera_name" << std::endl;
+        LOG_ERROR_S << "Unexisting or unsupported producer type/camera_name";
         return false; // wrong config
     }
 
@@ -124,7 +124,7 @@ void Task::updateHook()
             this->generateTelemetryFromFrame();
         }
         else
-            std::cout << "WARNING!! Nothing is connected to " << camera_name << " associated DEM generation component" << std::endl;
+            LOG_WARN_S << "WARNING!! Nothing is connected to " << camera_name << " associated DEM generation component";
 
         // new process finished, write out sync port
         _sync_out.write(sync_count);
@@ -198,7 +198,7 @@ void Task::generateTelemetryFromFrame()
 
     // no need to check newdata because it is sent before te tc for sure
     _left_frame_rect.read(leftFrame);
-    std::cout << "left frame time " << leftFrame->time << std::endl;
+    LOG_DEBUG_S << "left frame time " << leftFrame->time;
 
     // right frame is sent the same way as the left frame,
     // without intermediate processing, so we should not have
@@ -206,7 +206,7 @@ void Task::generateTelemetryFromFrame()
     if(save_both_frames)
     {
         _right_frame_rect.read(rightFrame);
-        std::cout << "right frame time " << rightFrame->time << std::endl;
+        LOG_DEBUG_S << "right frame time " << rightFrame->time;
     }
 
     // if not only frame we need to wait for the distance frame coming from stereo (TO BE CHECKED IF IT WORKS PROPERLY)
@@ -222,7 +222,7 @@ void Task::generateTelemetryFromFrame()
             if (time_diff > 0) // distance_image in the future (should never happen)
             {
                 sync = true; // should not happens, but at least program not stuck
-                std::cout << "WARNING FROM DEM_GENERATION, DISTANCE FRAME COMING FROM THE FUTURE TO KILL US!!\n";
+                LOG_WARN_S << "WARNING FROM DEM_GENERATION, DISTANCE FRAME COMING FROM THE FUTURE TO KILL US!!";
             }
             else if(time_diff <0) // must wait for new distance image
             {
@@ -236,11 +236,11 @@ void Task::generateTelemetryFromFrame()
             wait_count++;
             if(wait_count > 5000) // 5 seconds wait for a distance frame
             {
-                std::cout << "WARNING FROM DEM_GENERATION, TOOK TOO MUCH TIME TO RECEIVE A DISTANCE FRAME THERE IS A SERIOUS ISSUE SOMEWHERE\n";
+                LOG_WARN_S << "WARNING FROM DEM_GENERATION, TOOK TOO MUCH TIME TO RECEIVE A DISTANCE FRAME THERE IS A SERIOUS ISSUE SOMEWHERE";
                 return;
             }
         }
-        std::cout << "distance time " << distance_image.time << std::endl;
+        LOG_DEBUG_S << "distance time " << distance_image.time;
     }
 
     myDEM.setTimestamp(leftFrame->time.toString(base::Time::Milliseconds,"%Y%m%d_%H%M%S_"));
@@ -458,7 +458,7 @@ int Task::getConversionCode(RTT::extras::ReadOnlyPointer<base::samples::frame::F
     }
     else
     {
-        std::cerr << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << frame->getFrameMode() << "\n";
+        LOG_ERROR_S << "[DEM GENERATION OROGEN] Color frame with non supported encoding, add conversion here " << frame->getFrameMode();
         return -1;
     }
 }

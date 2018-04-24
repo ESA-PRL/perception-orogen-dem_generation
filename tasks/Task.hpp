@@ -19,6 +19,11 @@
 
 #include <unistd.h>
 
+#include <base-logging/Logging.hpp>
+
+#define BASE_LOGGING_WARN
+#define BASE_LOG_NAMESPACE dem_generation
+
 namespace dem_generation {
 
     class Task : public TaskBase
