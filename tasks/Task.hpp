@@ -1,28 +1,24 @@
 #ifndef DEM_GENERATION_TASK_TASK_HPP
 #define DEM_GENERATION_TASK_TASK_HPP
 
+#include <unistd.h>
+
 #include <opencv/cv.h>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <base-logging/Logging.hpp>
+
 #include <base/samples/Frame.hpp>
-#include "dem_generation/TaskBase.hpp"
 #include <frame_helper/FrameHelper.h>
-
 #include <pcl/point_cloud.h>
-
-#include <dem_generation/dem_generation.hpp>
-
+#include <telemetry_telecommand/Messages.hpp>
 #include <velodyne_lidar/pointcloudConvertHelper.hpp>
 #include <velodyne_lidar/MultilevelLaserScan.h>
 
-#include <telemetry_telecommand/Messages.hpp>
-
-#include <unistd.h>
-
-#include <base-logging/Logging.hpp>
+#include <dem_generation/dem_generation.hpp>
+#include "dem_generation/TaskBase.hpp"
 
 #define BASE_LOGGING_WARN
-#define BASE_LOG_NAMESPACE dem_generation
 
 namespace dem_generation {
 
