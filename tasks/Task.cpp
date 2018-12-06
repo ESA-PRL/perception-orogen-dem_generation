@@ -60,7 +60,7 @@ bool Task::configureHook()
 
     myDEM.compressProducts(_enable_compression.get(), _compression_level.get());
 
-    left_conv.setCalibrationParameter(calib);
+    frame_helper.setCalibrationParameter(calib);
 
 
     sync_count = 0;
@@ -251,8 +251,8 @@ void Task::generateTelemetryFromFrame()
         // rectify images
         base::samples::frame::Frame rock_frame_left(*leftFrame, true);
         base::samples::frame::Frame rock_frame_right(*rightFrame, true);
-        left_conv.convert( *leftFrame,  rock_frame_left,  0, 0, frame_helper::INTER_LINEAR, _rectify_images.value() );
-        left_conv.convert( *rightFrame, rock_frame_right, 0, 0, frame_helper::INTER_LINEAR, _rectify_images.value() );
+        frame_helper.convert( *leftFrame,  rock_frame_left,  0, 0, frame_helper::INTER_LINEAR, _rectify_images.value() );
+        frame_helper.convert( *rightFrame, rock_frame_right, 0, 0, frame_helper::INTER_LINEAR, _rectify_images.value() );
         cv::Mat cv_frame_left  = frame_helper::FrameHelper::convertToCvMat(rock_frame_left);
         cv::Mat cv_frame_right = frame_helper::FrameHelper::convertToCvMat(rock_frame_right);
 
@@ -267,7 +267,7 @@ void Task::generateTelemetryFromFrame()
     {
         // rectify image
         base::samples::frame::Frame rock_frame(*leftFrame, true);
-        left_conv.convert( *leftFrame, rock_frame, 0, 0, frame_helper::INTER_LINEAR, _rectify_images.value() );
+        frame_helper.convert( *leftFrame, rock_frame, 0, 0, frame_helper::INTER_LINEAR, _rectify_images.value() );
         cv::Mat cv_frame = frame_helper::FrameHelper::convertToCvMat(rock_frame);
 
         // convert to BGR color mode so we can save the image via OpenCV

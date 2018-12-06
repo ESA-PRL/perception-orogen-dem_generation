@@ -42,7 +42,7 @@ namespace dem_generation {
         telemetry_telecommand::messages::Telemetry telemetry;
         bool save_single_frame, save_both_frames, save_distance, save_dem, save_pc;
         int sync_count;
-        frame_helper::FrameHelper left_conv; // used to rectify camera frames
+        frame_helper::FrameHelper frame_helper; // used to rectify camera frames
         base::samples::frame::Frame leftFrameTarget;
         int getConversionCode(RTT::extras::ReadOnlyPointer<base::samples::frame::Frame> frame);
 
