@@ -108,9 +108,9 @@ void Task::updateHook()
                 input_pointcloud.points.resize(points.size());
                 for(unsigned int i = 0; i<input_pointcloud.size(); i++)
                 {
-                    input_pointcloud.points[i].x = (float)points[i][0];
-                    input_pointcloud.points[i].y = (float)points[i][1];
-                    input_pointcloud.points[i].z = (float)points[i][2];
+                    input_pointcloud.points[i].x = static_cast<float>(points[i][0]);
+                    input_pointcloud.points[i].y = static_cast<float>(points[i][1]);
+                    input_pointcloud.points[i].z = static_cast<float>(points[i][2]);
                 }
 
                 // generate telemetry
