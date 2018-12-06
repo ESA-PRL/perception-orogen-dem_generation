@@ -31,7 +31,8 @@ task_context "Task" do
     property("compression_level","float",20).doc("Compression rae for jpg. 0 worse quality, 100 best quality")
 
     # other properties
-    property "cameraCalibration", "/frame_helper/CameraCalibration"
+    property("cameraCalibration", "/frame_helper/CameraCalibration")
+    property("rectify_images", "bool", true).doc("Enable/disable rectification of images")
 
     # Telecommand input ports
     input_port('telecommands_in', 'std::vector<telemetry_telecommand/messages/Telecommand>').
