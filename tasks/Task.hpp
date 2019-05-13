@@ -18,8 +18,6 @@
 #include <dem_generation/dem_generation.hpp>
 #include "dem_generation/TaskBase.hpp"
 
-#define BASE_LOGGING_WARN
-
 namespace dem_generation {
 
     class Task : public TaskBase
