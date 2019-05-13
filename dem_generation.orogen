@@ -7,8 +7,8 @@ using_library "pcl_common-1.7"
 using_library "frame_helper"
 using_library "velodyne_lidar"
 using_library "telemetry_telecommand"
-import_types_from "telemetry_telecommand/Messages.hpp"
 
+import_types_from "telemetry_telecommand/Messages.hpp"
 import_types_from "base"
 import_types_from "frame_helper/Calibration.h"
 import_types_from "velodyne_lidar/MultilevelLaserScan.h"
@@ -66,6 +66,5 @@ task_context "Task" do
     # of the update hook
     output_port "sync_out", "int"
 
-    # Driving
     port_driven 'telecommands_in'
 end
