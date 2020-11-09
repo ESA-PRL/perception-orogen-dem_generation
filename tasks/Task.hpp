@@ -1,14 +1,12 @@
 #pragma once
 
 #include <frame_helper/FrameHelper.h>
-#include <opencv/cv.h>
 #include <pcl/point_cloud.h>
 #include <unistd.h>
 #include <velodyne_lidar/MultilevelLaserScan.h>
 #include <base-logging/Logging.hpp>
 #include <base/samples/Frame.hpp>
 #include <dem_generation/dem_generation.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <telemetry_telecommand/Messages.hpp>
 #include <velodyne_lidar/pointcloudConvertHelper.hpp>
 #include "dem_generation/TaskBase.hpp"
