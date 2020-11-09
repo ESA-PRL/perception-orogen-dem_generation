@@ -3,7 +3,7 @@ name "dem_generation"
 import_types_from "dem_generationTypes.hpp"
 
 using_library "dem_generation"
-using_library "pcl_common-1.8"
+using_library "pcl_common-1.10"
 using_library "frame_helper"
 using_library "velodyne_lidar"
 using_library "telemetry_telecommand"
